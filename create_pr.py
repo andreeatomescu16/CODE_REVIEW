@@ -1,4 +1,4 @@
-port os
+import os
 from github import Github
 from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
