@@ -33,13 +33,17 @@ def get_latest_commit_branch():
 
     branches = repo.get_branches()
     for branch in branches:
+        logger.info(f"Processing branch: {branch.name}")
         commits = repo.get_commits(sha=branch.name)
         if commits:
             latest_commit = commits[0]
+            logger.info(f"Latest commit in branch {branch.name}: {latest_commit.commit.author.date}")
             if latest_commit_date is None or latest_commit.commit.author.date > latest_commit_date:
                 latest_commit_date = latest_commit.commit.author.date
                 latest_commit_branch = branch.name
+                logger.info(f"Updated latest commit branch to: {latest_commit_branch}")
 
+    logger.info(f"Final latest commit branch: {latest_commit_branch}")
     return latest_commit_branch
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(), retry=retry_if_exception_type(Exception), before_sleep=before_sleep_log(logger, logging.WARNING))
@@ -51,24 +55,25 @@ def create_pull_request():
         if head is None:
             raise GitHubError("No branch found for the latest commit.")
 
-        print(f"Latest commit branch: {head}")
-        print(f"Base branch: {base}")
+        logger.info(f"Latest commit branch: {head}")
+        logger.info(f"Base branch: {base}")
 
         if head == base:
-            print(f"No new changes to merge. Both head and base are {base}.")
+            logger.info(f"No new changes to merge. Both head and base are {base}.")
             return
 
         # Check for existing pull requests
         pulls = repo.get_pulls(state='open', head=f"{repo.owner.login}:{head}", base=base)
         if pulls.totalCount > 0:
-            print(f"A pull request already exists for {head} into {base}.")
+            logger.info(f"A pull request already exists for {head} into {base}.")
             pr = pulls[0]
+            logger.info(f"Existing pull request: {pr.html_url}")
         else:
             # Create a pull request
             pr_title = f"Automated PR from {head} to {base}"
             pr_body = "This pull request is automatically created."
             pr = repo.create_pull(title=pr_title, body=pr_body, head=head, base=base)
-            print(f"Pull request created: {pr.html_url}")
+            logger.info(f"Pull request created: {pr.html_url}")
     except Exception as e:
         raise GitHubError(f"Failed to create and merge pull request after 3 retries: {str(e)}")
 
