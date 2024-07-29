@@ -1,4 +1,4 @@
-import os
+port os
 from github import Github
 from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
@@ -30,7 +30,7 @@ class GitHubError(Exception):
 def get_latest_commit_branch():
     latest_commit_date = None
     latest_commit_branch = None
-    
+
     branches = repo.get_branches()
     for branch in branches:
         commits = repo.get_commits(sha=branch.name)
@@ -43,7 +43,7 @@ def get_latest_commit_branch():
     return latest_commit_branch
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(), retry=retry_if_exception_type(Exception), before_sleep=before_sleep_log(logger, logging.WARNING))
-def create_and_merge_pull_request():
+def create_pull_request():
     try:
         base = repo.default_branch
         head = get_latest_commit_branch()
@@ -73,4 +73,4 @@ def create_and_merge_pull_request():
         raise GitHubError(f"Failed to create and merge pull request after 3 retries: {str(e)}")
 
 if __name__ == "__main__":
-    create_and_merge_pull_request()
+    create_pull_request()
